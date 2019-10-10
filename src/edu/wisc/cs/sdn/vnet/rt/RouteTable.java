@@ -18,118 +18,6 @@ import edu.wisc.cs.sdn.vnet.Iface;
  */
 public class RouteTable 
 {
-    /*
-	static class PrefixTree {
-		class TreeNode {
-			private String prefix;
-			private HashMap<String, TreeNode> nodes;
-			private ArrayList<RouteEntry> entries;
-
-			TreeNode(String prefix) {
-				this.prefix = prefix;
-				nodes = new HashMap<>();
-				entries = new ArrayList<>();
-			}
-
-			public String getPrefix() {
-				return prefix;
-			}
-
-			public void setPrefix(String prefix) {
-				this.prefix = prefix;
-			}
-
-			public HashMap<String, TreeNode> getNodes() {
-				return nodes;
-			}
-
-			public void setNodes(HashMap<String, TreeNode> nodes) {
-				this.nodes = nodes;
-			}
-
-			public ArrayList<RouteEntry> getEntries() {
-				return entries;
-			}
-
-			public void setEntries(ArrayList<RouteEntry> entries) {
-				this.entries = entries;
-			}
-		}
-
-		private TreeNode root = new TreeNode("");
-
-		public void add(String ip, RouteEntry entry) {
-			String[] e = ip.split("\\.");
-			// When tree is empty
-			TreeNode curr = root;
-			for (int i = 0; i < 4; i++) {
-				HashMap<String, TreeNode> nodes = curr.getNodes();
-
-				if (!nodes.containsKey(e[i])) {
-					TreeNode newNode = new TreeNode(e[i]);
-					nodes.put(e[i], newNode);
-					curr = newNode;
-					curr.getEntries().add(entry);
-				} else {
-					curr = nodes.get(e[i]);
-					curr.getEntries().add(entry);
-				}
-			}
-		}
-		private int getBit(byte b, int pos) {
-			return (b >> pos) & 1;
-		}
-
-		private int countIdenticalBits(byte a, byte b) {
-			int count = 0;
-			for(int i = 7; i >= 0; i--) {
-				if(getBit(a, i) == getBit(b, i)){
-					count++;
-				} else {
-					break;
-				}
-			}
-
-			return count;
-		}
-
-		private RouteEntry compareByBits(HashMap<String, TreeNode> map, String nextPrefix, int level) {
-			RouteEntry result = null;
-			int max_bits = 0;
-			return null;
-		}
-
-		private RouteEntry find(String ip) {
-			if (root == null) {
-				return null;
-			}
-
-			String[] e = ip.split("\\.");
-			// When tree is empty
-			TreeNode curr = root;
-			int level = 0;
-			for (; level < 4; level++) {
-				if (!curr.getNodes().containsKey(e[level])) {
-					break;
-				} else {
-					curr = curr.getNodes().get(e[level]);
-				}
-			}
-			// no matching prefix
-			if (curr == root) {
-				return null;
-			}
-
-			if (curr.getEntries().size() != 1) {
-			    compareByBits(curr.getNodes(), e[level]);
-				return null;
-			}
-
-			return curr.getEntries().get(0);
-		}
-	}
-     */
-
 	/** Entries in the route table */
 	private List<RouteEntry> entries;
 	// private PrefixTree prefixTree;
@@ -140,24 +28,10 @@ public class RouteTable
 	RouteTable()
 	{
 		this.entries = new LinkedList<>();
-		// this.prefixTree = new PrefixTree();
 	}
 
-	private int getBit(int i, int pos) {
-		return (i >> pos) & 1;
-	}
-
-	private int countIdenticalBits(int a, int b, int length) {
-		int count = 0;
-		for(int i = 31; i >= (32 - length); i--) {
-			if(getBit(a, i) == getBit(b, i)){
-				count++;
-			} else {
-				break;
-			}
-		}
-
-		return count;
+	private int xnor(int a, int b) {
+		return ~(a ^ b);
 	}
 
 	/**
@@ -188,15 +62,13 @@ public class RouteTable
             	return resultSet.get(0);
 			}
 			// use longest prefix to resolve
-			int max_bits_matched = 0;
+			int biggestResult = 0;
             for(RouteEntry e : resultSet) {
-                // Not necessary
             	int maskedDest = e.getDestinationAddress() & e.getMaskAddress();
-                int tmp = countIdenticalBits(ip, maskedDest, e.getMaskedLength());
-                System.out.println("Identical bits: " + tmp);
-                if(tmp > max_bits_matched) {
+				int result = xnor(maskedDest, ip);
+				if(result > biggestResult) {
+					biggestResult = result;
 					entry = e;
-					max_bits_matched = tmp;
 				}
 			}
 
@@ -295,15 +167,6 @@ public class RouteTable
 		return true;
 	}
 
-	private int getMaskLength(int n) {
-		int count = 0;
-		while (n != 0) {
-			n = n & (n - 1);
-			count++;
-		}
-		return count;
-	}
-
 	/**
 	 * Add an entry to the route table.
 	 * @param dstIp destination IP
@@ -314,7 +177,7 @@ public class RouteTable
 	 */
 	public void insert(int dstIp, int gwIp, int maskIp, Iface iface)
 	{
-		RouteEntry entry = new RouteEntry(dstIp, gwIp, maskIp, iface, getMaskLength(maskIp));
+		RouteEntry entry = new RouteEntry(dstIp, gwIp, maskIp, iface);
         synchronized(this.entries)
         { 
             this.entries.add(entry);
@@ -357,7 +220,6 @@ public class RouteTable
             { return false; }
             entry.setGatewayAddress(gwIp);
             entry.setInterface(iface);
-            entry.setMaskedLength(getMaskLength(maskIp));
         }
         return true;
 	}
