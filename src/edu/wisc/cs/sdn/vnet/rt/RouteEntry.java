@@ -33,13 +33,12 @@ public class RouteEntry
 	 *        be sent to reach the destination or gateway
 	 */
 	public RouteEntry(int destinationAddress, int gatewayAddress, 
-			int maskAddress, Iface iface, int maskedLength)
+			int maskAddress, Iface iface)
 	{
 		this.destinationAddress = destinationAddress;
 		this.gatewayAddress = gatewayAddress;
 		this.maskAddress = maskAddress;
 		this.iface = iface;
-		this.maskedLength = maskedLength;
 	}
 	
 	/**
@@ -73,22 +72,13 @@ public class RouteEntry
     public void setInterface(Iface iface)
     { this.iface = iface; }
 
-	public int getMaskedLength() {
-		return maskedLength;
-	}
-
-	public void setMaskedLength(int maskedLength) {
-		this.maskedLength = maskedLength;
-	}
-
 	public String toString()
 	{
-		return String.format("%s \t%s \t%s \t%s \t%d",
+		return String.format("%s \t%s \t%s \t%s",
 				IPv4.fromIPv4Address(this.destinationAddress),
 				IPv4.fromIPv4Address(this.gatewayAddress),
 				IPv4.fromIPv4Address(this.maskAddress),
-				this.iface.getName(),
-				this.maskedLength
+				this.iface.getName()
 				);
 	}
 }

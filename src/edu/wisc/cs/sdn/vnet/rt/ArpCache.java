@@ -47,7 +47,6 @@ public class ArpCache
 	/**
 	 * Populate the ARP cache from a file.
 	 * @param filename name of the file containing the static route table
-	 * @param router the route table is associated with
 	 * @return true if route table was successfully loaded, otherwise false
 	 */
 	public boolean load(String filename)
